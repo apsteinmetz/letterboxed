@@ -17,9 +17,14 @@ word_list <-anti_join(word_list_raw,
 
 
 #new game
-generate_board <- function(sides=4,letters_per_side=3,vowel_count=4){
-  use_vowels <- sample(vowels,vowel_count)
-  use_consonants <- sample(consonants,letters_per_side*sides-vowel_count)
+generate_board <- function(sides=4,letters_per_side=3,vowel_count=4,replacement = FALSE){
+  if(sides < 4){
+    print("Minimum Side is 4, changing to 4")
+    sides = 4
+  }
+  if (vowel_count < sides) replacement=TRUE
+  use_vowels <- sample(vowels,vowel_count,replace = replacement)
+  use_consonants <- sample(consonants,letters_per_side*sides-vowel_count,replace = replacement)
   # deal out the letters
   letter = NULL
   vowels_used = 1
