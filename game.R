@@ -48,7 +48,34 @@ generate_board <- function(sides=4,letters_per_side=3,vowel_count=4){
 
 puzzle <- generate_board()
 
+get_polygon <- function(sides=4){
+  x_center <- 0
+  y_center <- 0
+  radius <- 5
+  y <- NULL
+  x <- NULL
+  angle = 3.925
+  angle_increment <-  2 * pi / sides
+  for (i in 1:sides){
+    x[i] = x_center + radius * cos(angle)
+    y[i] = y_center + radius * sin(angle)
+    angle = angle + angle_increment
+  }
+  #close figure
+  x[i+1] <- x[1]
+  y[i+1] <- y[1]
+  return(data.frame(x=x,y=y))
+}
+
+test <- get_polygon(4)
+get_point_on_line <- function(end_points){
+  endpoints[1]$x
+}
+
+get_polygon(4) %>% ggplot(aes(x,y))+geom_path() + coord_fixed()
+
 ggplot(puzzle,aes(side,spot)) + 
   geom_line() + 
   # geom_point() + 
   geom_text(aes(label=letter),size=10) 
+
