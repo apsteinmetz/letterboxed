@@ -1,7 +1,9 @@
 # letterboxed game
 library(tidyverse)
+library(wfindr)
+library(gtools)
 
-sides <- 5
+findsides <- 5
 letters_per_side <- 2
 vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
@@ -120,3 +122,27 @@ letters_per_side <- 3
 vowel_count <- sides
 puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
 draw_puzzle(puzzle,sides=sides,letters_per_side = letters_per_side)
+
+# ------------------------------------------------------
+# dplyr chain-friendly permuatations
+d_permute <- function(v, n, r,  set, repeats.allowed){
+  return(permutations(n, r, v, set, repeats.allowed))
+}
+# -----------------------------------------------------
+get_line_combos <- function(a_side,puzzle){
+  combos <- puzzle %>% filter(side==a_side) %>% 
+  pull(letter) %>% 
+  d_permute(n=3,r=2,set=F,repeats.allowed = T) %>% 
+  apply(1,paste0,collapse="")
+  return(combos)
+}
+# -----------------------------------------------------
+# get all letter combos that are invalid because they lie on the same line segment
+bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
+
+#get all possible words
+puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""))
+length(puzzle_words)
+#winnow out illegal ones
+puzzle_words <- puzzle_words[str_detect(puzzle_words,bans,negate = TRUE)]
+length(puzzle_words)
