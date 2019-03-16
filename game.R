@@ -1,6 +1,8 @@
 # letterboxed game
 library(tidyverse)
 
+sides <- 5
+letters_per_side <- 2
 vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
 
@@ -16,13 +18,15 @@ word_list <-anti_join(word_list_raw,
                                     function(x) filter(word_list_raw,str_detect(word,paste0(x,x))))))
 
 
-#new game
-generate_board <- function(sides=4,letters_per_side=3,vowel_count=4,replacement = FALSE){
+#
+# ------------------------------------------------------------
+generate_puzzle <- function(sides=4,letters_per_side=3,vowel_count=4,replacement = FALSE){
   if(sides < 4){
     print("Minimum Side is 4, changing to 4")
     sides = 4
   }
   if (vowel_count < sides) replacement=TRUE
+  if (vowel_count > length(vowels)) replacement=TRUE
   use_vowels <- sample(vowels,vowel_count,replace = replacement)
   use_consonants <- sample(consonants,letters_per_side*sides-vowel_count,replace = replacement)
   # deal out the letters
@@ -51,8 +55,7 @@ generate_board <- function(sides=4,letters_per_side=3,vowel_count=4,replacement 
   return(puzzle)
 }
 
-puzzle <- generate_board()
-
+# -------------------------------------------------------------
 get_polygon <- function(sides=4){
   x_center <- 0
   y_center <- 0
@@ -72,15 +75,48 @@ get_polygon <- function(sides=4){
   return(data.frame(x=x,y=y))
 }
 
-test <- get_polygon(4)
-get_point_on_line <- function(end_points){
-  endpoints[1]$x
+# -------------------------------------------------------------
+get_points_on_segment <- function(end_points,num_points){
+  # pointdistance is fraction of segment length
+  a <- as.numeric(end_points[1,])
+  b <- as.numeric(end_points[2,])
+
+  # Use atan2!
+  th = atan2( b[2]-a[2] , b[1]-a[1] )
+  
+  # length of segment AB
+  AB = sqrt( (b[2]-a[2])^2 + (b[1]-a[1])^2 )
+  AB_fraction <- AB / (num_points +1 )
+  # points equidistant on the line
+  AP = sapply(1:(num_points),function(x) x * AB_fraction)
+  
+  # The points of interest
+  c = sapply(AP,function(d) c(x = a[1] + d*cos( th ),
+                              y = a[2] + d*sin( th ))) %>% 
+    t() %>%
+    as.data.frame()
+  return(c)
 }
+# -------------------------------------------------------------
+draw_puzzle <-function(puzzle,sides=4,letters_per_side=3){
+  
+puzzle_shape <- get_polygon(sides)
+letter_pos<-lapply(1:(nrow(puzzle_shape)-1),
+                    function(p) get_points_on_segment(puzzle_shape[p:(p+1),],letters_per_side)) %>% 
+  bind_rows() %>% 
+  bind_cols(puzzle)
 
-get_polygon(4) %>% ggplot(aes(x,y))+geom_path() + coord_fixed()
 
-ggplot(puzzle,aes(side,spot)) + 
-  geom_line() + 
-  # geom_point() + 
-  geom_text(aes(label=letter),size=10) 
+puzzle_shape %>% ggplot(aes(x,y)) + geom_path() + coord_fixed() +
+  geom_point(data=letter_pos,aes(x,y),size=20,color="white") + 
+  geom_text(data=letter_pos,aes(x,y,label = letter),size=10) + 
+  theme_void() + 
+  theme(panel.background = element_rect(fill="pink")) + 
+  NULL
 
+}
+sides <- 4
+letters_per_side <- 3
+vowel_count <- sides
+puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
+draw_puzzle(puzzle,sides=sides,letters_per_side = letters_per_side)
