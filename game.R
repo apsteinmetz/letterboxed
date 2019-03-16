@@ -136,7 +136,7 @@ get_line_combos <- function(a_side,puzzle){
   apply(1,paste0,collapse="")
   return(combos)
 }
-# -----------------------------------------------------
+
 # get all letter combos that are invalid because they lie on the same line segment
 bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
 
@@ -144,5 +144,51 @@ bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
 puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""))
 length(puzzle_words)
 #winnow out illegal ones
-puzzle_words <- puzzle_words[str_detect(puzzle_words,bans,negate = TRUE)]
+banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
+  unlist()
+puzzle_words <- puzzle_words[!(puzzle_words %in% banned_words)]
 length(puzzle_words)
+
+
+# -----------------------------------------------------
+find_next_words <- function(w){
+  # find words that start with last letter of w
+  # prefer larger words that touch more letters
+  next_words<-puzzle_words[str_starts(puzzle_words,str_sub(w,-1))]
+  next_words <-next_words[order(nchar(next_words),decreasing = TRUE, next_words)]
+  #return minimum words by unique last letter
+  last_letters <- str_sub(next_words,-1L) %>% unique()
+  next_words <- map(last_letters,function(x) next_words[match(TRUE,endsWith(next_words,x))]) %>%
+    unlist()
+  return(next_words)
+}
+
+# make word chains
+
+word_chain <- ""
+used_last_letters <- ""
+last_letter <- ""
+all_puzzle_letters <- puzzle$letter %>% as.vector() %>% paste0(collapse = "")
+next_words <- puzzle_words[1:3]
+make_chain <- function(word_chain){
+  last_word <- tail(word_chain,1)
+  last_letter <-str_sub(last_word,-1L)
+  if (str_detect(used_last_letters,last_letter,negate=T)){
+    used_last_letters <<- paste0(last_letter,used_last_letters,collapse = "")
+    next_words<-find_next_words(last_word)
+    map(next_words,function(x) make_chain(c(word_chain,x)))
+    
+  }
+
+}  
+
+# make_chain("ego")
+
+test_words <- sample(puzzle_words,20)
+test_chrs<-paste0(test_words,collapse = "") %>% 
+  strsplit(split="") %>%
+  unlist() %>% 
+  unique()
+
+all_letters 
+
