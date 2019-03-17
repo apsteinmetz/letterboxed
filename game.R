@@ -8,19 +8,9 @@ letters_per_side <- 2
 vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
 
-#word_list_raw <- tibble(word=readLines("http://norvig.com/ngrams/word.list"))
-#save(word_list_raw,file="data/word_list_raw.rdata")
-load("data/word_list_raw.rdata")
-#set.seed(1234)
-#test <- tibble(word=sample(word_list_raw,1000))
-
-# filter out all words with duplicate consecutive letters since they can never be in puzzle
-word_list <-anti_join(word_list_raw, 
-                      bind_rows(map(letters,
-                                    function(x) filter(word_list_raw,str_detect(word,paste0(x,x))))))
-
-
-#
+load("data/medium_word_list.rdata")
+word_list <- medium_word_list
+rm(medium_word_list)
 # ------------------------------------------------------------
 generate_puzzle <- function(sides=4,letters_per_side=3,vowel_count=4,replacement = FALSE){
   if(sides < 4){
@@ -128,6 +118,11 @@ draw_puzzle(puzzle,sides=sides,letters_per_side = letters_per_side)
 d_permute <- function(v, n, r,  set, repeats.allowed){
   return(permutations(n, r, v, set, repeats.allowed))
 }
+
+
+
+# ------------------------------------------------------
+# SOLVING SECTION
 # -----------------------------------------------------
 get_line_combos <- function(a_side,puzzle){
   combos <- puzzle %>% filter(side==a_side) %>% 
@@ -141,7 +136,7 @@ get_line_combos <- function(a_side,puzzle){
 bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
 
 #get all possible words
-puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""))
+puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=short_word_list)
 length(puzzle_words)
 #winnow out illegal ones
 banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
@@ -163,32 +158,44 @@ find_next_words <- function(w){
   return(next_words)
 }
 
+# -----------------------------------------------------
+test_for_done <- function(word_chain){
+  word_chain_chars <-  paste0(word_chain,collapse = "") %>% 
+    strsplit(split="") %>%
+    unlist() %>% 
+    unique()
+  if (length(setdiff(all_puzzle_letters,
+                     word_chain_chars))==0) return(TRUE)
+  else return(FALSE)
+}
+
 # make word chains
 
 word_chain <- ""
 used_last_letters <- ""
 last_letter <- ""
-all_puzzle_letters <- puzzle$letter %>% as.vector() %>% paste0(collapse = "")
+all_puzzle_letters <- puzzle$letter %>% as.vector()
 next_words <- puzzle_words[1:3]
 make_chain <- function(word_chain){
-  last_word <- tail(word_chain,1)
-  last_letter <-str_sub(last_word,-1L)
-  if (str_detect(used_last_letters,last_letter,negate=T)){
-    used_last_letters <<- paste0(last_letter,used_last_letters,collapse = "")
-    next_words<-find_next_words(last_word)
-    map(next_words,function(x) make_chain(c(word_chain,x)))
-    
+  word_chain <<- word_chain
+  if (test_for_done(word_chain)) {
+    return(c(word_chain,"SOLVED"))
   }
-
+  else {
+    last_word <- tail(word_chain,1)
+    last_letter <-str_sub(last_word,-1L)
+    if (str_detect(used_last_letters,last_letter,negate=T)){
+      used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
+      next_words<-find_next_words(last_word)
+      if (!is.null(next_words)){
+        map(next_words,function(x) make_chain(c(word_chain,x)))
+      } else {
+          return(c(word_chain,"NO SOLUTION"))
+      }
+    } else{
+      return(c(word_chain,"NO SOLUTION"))
+    }
+  }
 }  
 
-# make_chain("ego")
-
-test_words <- sample(puzzle_words,20)
-test_chrs<-paste0(test_words,collapse = "") %>% 
-  strsplit(split="") %>%
-  unlist() %>% 
-  unique()
-
-all_letters 
-
+make_chain("ego")
