@@ -8,6 +8,7 @@ letters_per_side <- 2
 vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
 
+# load list of word candidates
 load("data/medium_word_list.rdata")
 word_list <- medium_word_list
 rm(medium_word_list)
@@ -136,7 +137,7 @@ get_line_combos <- function(a_side,puzzle){
 bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
 
 #get all possible words
-puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=short_word_list)
+puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
 length(puzzle_words)
 #winnow out illegal ones
 banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
@@ -176,7 +177,7 @@ used_last_letters <- ""
 last_letter <- ""
 all_puzzle_letters <- puzzle$letter %>% as.vector()
 next_words <- puzzle_words[1:3]
-make_chain <- function(word_chain){
+make_chain <- function(word_chain,used_last_letters){
   word_chain <<- word_chain
   if (test_for_done(word_chain)) {
     return(c(word_chain,"SOLVED"))
@@ -188,7 +189,7 @@ make_chain <- function(word_chain){
       used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
       next_words<-find_next_words(last_word)
       if (!is.null(next_words)){
-        map(next_words,function(x) make_chain(c(word_chain,x)))
+        map(next_words,function(x) make_chain(c(word_chain,x)),used_last_letters)
       } else {
           return(c(word_chain,"NO SOLUTION"))
       }
@@ -198,4 +199,4 @@ make_chain <- function(word_chain){
   }
 }  
 
-make_chain("ego")
+#make_chain("ego","")

@@ -34,3 +34,24 @@ short_word_list <-anti_join(short_word_list,
                                                              str_detect(word,paste0(x,x)))))) %>% 
   pull(word)
 save(short_word_list,file="data/short_word_list.rdata")
+
+# -----------------------------------------------------
+scrabbleNA_word_list_raw <- tibble(word=read_lines("http://norvig.com/ngrams/TWL06.txt")) %>% 
+  mutate(word=tolower(word))
+# filter out all words with duplicate consecutive letters since they can never be in puzzle
+scrabbleNA_word_list <-anti_join(scrabbleNA_word_list_raw, 
+                           bind_rows(map(letters,
+                                         function(x) filter(scrabbleNA_word_list_raw,
+                                                            str_detect(word,paste0(x,x)))))) %>% 
+  pull(word)
+
+save(scrabbleNA_word_list,file="data/scrabblena_word_list.rdata")
+
+# ---------------------------------
+# remove words from medium word list that are not scrabble words
+medium_word_list <- semi_join(medium_word_list_raw,scrabbleNA_word_list_raw) %>% 
+  anti_join(bind_rows(map(letters,
+                          function(x) filter(medium_word_list_raw,
+                                             str_detect(word,paste0(x,x)))))) %>% 
+  pull(word)
+save(medium_word_list,file = "data/medium_word_list.rdata")
