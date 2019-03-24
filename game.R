@@ -127,26 +127,12 @@ d_permute <- function(v, n, r,  set, repeats.allowed){
 # -----------------------------------------------------
 get_line_combos <- function(a_side,puzzle){
   combos <- puzzle %>% filter(side==a_side) %>% 
-  pull(letter) %>% 
-  d_permute(n=3,r=2,set=F,repeats.allowed = T) %>% 
-  apply(1,paste0,collapse="")
+    pull(letter) %>% 
+    as.character() %>% 
+    d_permute(n=3,r=2,set=F,repeats.allowed = T) %>% 
+    apply(1,paste0,collapse="")
   return(combos)
 }
-
-# get all letter combos that are invalid because they lie on the same line segment
-bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
-
-#get all possible words
-puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
-length(puzzle_words)
-#winnow out illegal ones
-banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
-  unlist()
-puzzle_words <- puzzle_words[!(puzzle_words %in% banned_words)]
-puzzle_words <-puzzle_words[order(nchar(puzzle_words),decreasing = TRUE, puzzle_words)]
-
-length(puzzle_words)
-
 
 # -----------------------------------------------------
 find_next_words <- function(w,needed_letters){
@@ -249,26 +235,57 @@ make_chain2 <- function(word_chain,used_last_letters,solved){
   }
 }  
 
+# ---------------------------------------------------------------------
+make_chain3 <- function(word_chain,used_last_letters){
+  needed_letters <- test_needed_letters(word_chain)
+  if (length(word_chain)>5){
+    # come on, if you can't solve in 5, you suck!
+    return()
+  }
+  if (length(needed_letters)==0) {
+    print(c("SOLVED",word_chain))
+    # solved = TRUE
+    solution_list[length(solution_list)+1] <<-  list(word_chain)
+    return(list(word_chain))
+  }
+  else {
+    last_word <- tail(word_chain,1)
+    last_letter <-str_sub(last_word,-1L)
+    if (str_detect(used_last_letters,last_letter,negate=T)){
+      used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
+      next_word<-find_next_best_word(last_word,needed_letters)
+      if (!is.null(next_word)){
+        word_chain <- make_chain3(c(word_chain,next_word),used_last_letters)
+      } else {
+        return()
+      }
+    } else{
+      return()
+    }
+  }
+}  
+
+# ------------------------------------------------------------------------------
 sides <- 4
 letters_per_side <- 3
 vowel_count <- sides
 solution_list <- list()
-puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
-#puzzle <- sample_puzzle
+#puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
+puzzle <- sample_puzzle
 # get all letter combos that are invalid because they lie on the same line segment
 #bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
+# get all letter combos that are invalid because they lie on the same line segment
+bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
 
 #get all possible words
 puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
 length(puzzle_words)
 #winnow out illegal ones
-#banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
-#  unlist()
-#puzzle_words <- puzzle_words[!(puzzle_words %in% banned_words)]
-puzzle_words <-puzzle_words[order(nchar(puzzle_words),decreasing = TRUE, puzzle_words)]
-
+banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
+  unlist()
+puzzle_words <- puzzle_words[!(puzzle_words %in% banned_words)]
 length(puzzle_words)
-
+puzzle_words <-puzzle_words[order(nchar(puzzle_words),decreasing = TRUE, puzzle_words)]
 
 word_chain <- ""
 used_last_letters <- ""
@@ -277,5 +294,5 @@ all_puzzle_letters <- puzzle$letter %>% as.vector()
 
 
 draw_puzzle(puzzle)
-map(puzzle_words,make_chain2,"",FALSE)
+solutions <- map(puzzle_words,make_chain3,"")
 
