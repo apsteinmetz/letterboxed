@@ -153,15 +153,29 @@ find_next_words <- function(w,needed_letters){
 }
 
 # -----------------------------------------------------
-find_next_best_word <- function(w,needed_letters){
+# find_next_best_word <- function(w,needed_letters){
+#   # puzzle_words is global
+#   # find words that start with last letter of w
+#   next_words<-puzzle_words[str_starts(puzzle_words,str_sub(w,-1))]
+#   # prioritize words by greatest overlap with unused letters
+#   next_word_chars <-  map(next_words,strsplit,split="") %>% unlist(recursive = F)
+#   temp <- map(next_word_chars,function(x) length(setdiff(needed_letters,x)))
+#   next_word <- next_words[which.min(unlist(temp))]
+#   return(next_word)
+# }
+# -----------------------------------------------------
+find_next_best_words <- function(w,needed_letters,max_return=1){
+  # the higher max_return is the more words will be traversed.  Careful,
+  # computation times will geometrically increase.
   # puzzle_words is global
   # find words that start with last letter of w
   next_words<-puzzle_words[str_starts(puzzle_words,str_sub(w,-1))]
   # prioritize words by greatest overlap with unused letters
   next_word_chars <-  map(next_words,strsplit,split="") %>% unlist(recursive = F)
-  temp <- map(next_word_chars,function(x) length(setdiff(needed_letters,x)))
-  next_word <- next_words[which.min(unlist(temp))]
-  return(next_word)
+  temp <- map(next_word_chars,function(x) length(setdiff(needed_letters,x))) %>% unlist()
+  next_words <- next_words[order(temp)]
+  max_return <- min(length(next_words),max_return)
+  return(next_words[1:max_return])
 }
 # -----------------------------------------------------
 test_needed_letters <- function(word_chain){
@@ -174,73 +188,10 @@ test_needed_letters <- function(word_chain){
 }
 
 # make word chains
-
+# ---------------------------------------------------------------------
 make_chain <- function(word_chain,used_last_letters){
-  if (length(word_chain)>5){
-    print(c("NOT SOLVED: Size Limit",word_chain),justify="left")
-    return(word_chain)
-  }
-  # print(paste(paste0(rep("-",length(word_chain)),collapse = "")))
   needed_letters <- test_needed_letters(word_chain)
-  if (length(needed_letters)==0) {
-    print(c("SOLVED",word_chain))
-    stop
-    return(c(word_chain,"SOLVED"))
-  }
-  else {
-    last_word <- tail(word_chain,1)
-    last_letter <-str_sub(last_word,-1L)
-    if (str_detect(used_last_letters,last_letter,negate=T)){
-      used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
-      next_words<-find_next_words(last_word,needed_letters)
-      if (!is.null(next_words)){
-        map(next_words,function(x) make_chain(c(word_chain,x),used_last_letters))
-      } else {
-        cat("NO SOLUTION",word_chain)
-        Return(c(word_chain,"NO SOLUTION"))
-      }
-    } else{
-      cat("NO SOLUTION",word_chain)
-      return(c(word_chain,"NO SOLUTION"))
-    }
-  }
-}  
-
-# ---------------------------------------------------------------------
-make_chain2 <- function(word_chain,used_last_letters,solved){
-  needed_letters <- test_needed_letters(word_chain)
-  if (length(word_chain)>5){
-    # come on, if you can't solve in 5, you suck!
-    return(list(word_chain,used_last_letters,solved))
-  }
-  # print(paste(paste0(rep("-",length(word_chain)),collapse = "")))
-  if (length(needed_letters)==0) {
-    print(c("SOLVED",word_chain))
-    solved = TRUE
-    solution_list[length(solution_list)+1] <<-  list(word_chain)
-    return(list(word_chain,used_last_letters,solved))
-  }
-  else {
-    last_word <- tail(word_chain,1)
-    last_letter <-str_sub(last_word,-1L)
-    if (str_detect(used_last_letters,last_letter,negate=T)){
-      used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
-      next_word<-find_next_best_word(last_word,needed_letters)
-      if (!is.null(next_word)){
-        make_chain2(c(word_chain,next_word),used_last_letters,solved)
-      } else {
-        return(list(word_chain,used_last_letters,solved))
-      }
-    } else{
-      return(list(word_chain,used_last_letters,solved))
-    }
-  }
-}  
-
-# ---------------------------------------------------------------------
-make_chain3 <- function(word_chain,used_last_letters){
-  needed_letters <- test_needed_letters(word_chain)
-  if (length(word_chain)>5){
+  if (length(word_chain)>6){
     # come on, if you can't solve in 5, you suck!
     return()
   }
@@ -255,11 +206,14 @@ make_chain3 <- function(word_chain,used_last_letters){
     last_letter <-str_sub(last_word,-1L)
     if (str_detect(used_last_letters,last_letter,negate=T)){
       used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
-      next_word<-find_next_best_word(last_word,needed_letters)
-      if (length(next_word)>0){
-        word_chain <- make_chain3(c(word_chain,next_word),used_last_letters)
-      } else {
-        return()
+      # next_word<-find_next_best_word(last_word,needed_letters)
+      next_words<-find_next_best_words(last_word,needed_letters,max_return=1)
+      for (next_word in next_words) {
+      #if (length(next_word)>0){
+        word_chain <- make_chain(c(word_chain,next_word),used_last_letters)
+#      } else {
+#        return()
+#      }
       }
     } else{
       return()
@@ -284,7 +238,7 @@ solve_puzzle <- function (puzzle) {
   
   all_puzzle_letters <<- puzzle$letter %>% as.vector()
   
-  solutions <- map(puzzle_words,make_chain3,"")%>% unlist(recursive = F)
+  solutions <- map(puzzle_words,make_chain,"") %>% unlist(recursive = F)
   return(solutions)
 }
 # ------------------------------------------------------------------------------
@@ -294,8 +248,9 @@ sides <- 4
 letters_per_side <- 3
 vowel_count <- sides
 # global variables
-puzzle_letters <- NULL
+all_puzzle_letters <- NULL
 puzzle_words <- NULL
+solution_list <- NULL
 puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
 #puzzle <- sample_puzzle
 draw_puzzle(puzzle)
