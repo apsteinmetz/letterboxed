@@ -105,12 +105,13 @@ letter_pos<-lapply(1:(nrow(puzzle_shape)-1),
   bind_cols(puzzle)
 
 
-puzzle_shape %>% ggplot(aes(x,y)) + geom_path() + coord_fixed() +
+gg <- puzzle_shape %>% ggplot(aes(x,y)) + geom_path() + coord_fixed() +
   geom_point(data=letter_pos,aes(x,y),size=20,color="white") + 
   geom_text(data=letter_pos,aes(x,y,label = letter),size=10) + 
   theme_void() + 
   theme(panel.background = element_rect(fill="pink")) + 
-  NULL
+  NULL 
+print(gg)
 
 }
 
@@ -264,35 +265,37 @@ make_chain3 <- function(word_chain,used_last_letters){
     }
   }
 }  
-
 # ------------------------------------------------------------------------------
+
+solve_puzzle <- function (puzzle) {
+  # get all letter combos that are invalid because they lie on the same line segment
+  bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
+  #get all possible words
+  puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
+  length(puzzle_words)
+  #winnow out illegal ones
+  banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
+    unlist()
+  puzzle_words <- puzzle_words[!(puzzle_words %in% banned_words)]
+  length(puzzle_words)
+  puzzle_words <-puzzle_words[order(nchar(puzzle_words),decreasing = TRUE, puzzle_words)]
+  
+  word_chain <- ""
+  used_last_letters <- ""
+  last_letter <- ""
+  all_puzzle_letters <- puzzle$letter %>% as.vector()
+  
+  solutions <- map(puzzle_words,make_chain3,"")%>% unlist(recursive = F)
+  return(solutions)
+}
+# ------------------------------------------------------------------------------
+
+
 sides <- 4
 letters_per_side <- 3
 vowel_count <- sides
-solution_list <- list()
-#puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
-puzzle <- sample_puzzle
-# get all letter combos that are invalid because they lie on the same line segment
-#bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
-# get all letter combos that are invalid because they lie on the same line segment
-bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
-
-#get all possible words
-puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
-length(puzzle_words)
-#winnow out illegal ones
-banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
-  unlist()
-puzzle_words <- puzzle_words[!(puzzle_words %in% banned_words)]
-length(puzzle_words)
-puzzle_words <-puzzle_words[order(nchar(puzzle_words),decreasing = TRUE, puzzle_words)]
-
-word_chain <- ""
-used_last_letters <- ""
-last_letter <- ""
-all_puzzle_letters <- puzzle$letter %>% as.vector()
-
-
+puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
+#puzzle <- sample_puzzle
 draw_puzzle(puzzle)
-solutions <- map(puzzle_words,make_chain3,"")
+solutions <- solve_puzzle(puzzle)
 
