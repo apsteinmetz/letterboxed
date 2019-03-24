@@ -154,6 +154,7 @@ find_next_words <- function(w,needed_letters){
 
 # -----------------------------------------------------
 find_next_best_word <- function(w,needed_letters){
+  # puzzle_words is global
   # find words that start with last letter of w
   next_words<-puzzle_words[str_starts(puzzle_words,str_sub(w,-1))]
   # prioritize words by greatest overlap with unused letters
@@ -255,7 +256,7 @@ make_chain3 <- function(word_chain,used_last_letters){
     if (str_detect(used_last_letters,last_letter,negate=T)){
       used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
       next_word<-find_next_best_word(last_word,needed_letters)
-      if (!is.null(next_word)){
+      if (length(next_word)>0){
         word_chain <- make_chain3(c(word_chain,next_word),used_last_letters)
       } else {
         return()
@@ -271,19 +272,17 @@ solve_puzzle <- function (puzzle) {
   # get all letter combos that are invalid because they lie on the same line segment
   bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
   #get all possible words
-  puzzle_words <- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
+  puzzle_words <<- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
   length(puzzle_words)
   #winnow out illegal ones
   banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
     unlist()
-  puzzle_words <- puzzle_words[!(puzzle_words %in% banned_words)]
+  puzzle_words <<- puzzle_words[!(puzzle_words %in% banned_words)]
   length(puzzle_words)
-  puzzle_words <-puzzle_words[order(nchar(puzzle_words),decreasing = TRUE, puzzle_words)]
+  puzzle_words <<-puzzle_words[order(nchar(puzzle_words),decreasing = TRUE, puzzle_words)]
   
-  word_chain <- ""
-  used_last_letters <- ""
-  last_letter <- ""
-  all_puzzle_letters <- puzzle$letter %>% as.vector()
+  
+  all_puzzle_letters <<- puzzle$letter %>% as.vector()
   
   solutions <- map(puzzle_words,make_chain3,"")%>% unlist(recursive = F)
   return(solutions)
@@ -294,6 +293,9 @@ solve_puzzle <- function (puzzle) {
 sides <- 4
 letters_per_side <- 3
 vowel_count <- sides
+# global variables
+puzzle_letters <- NULL
+puzzle_words <- NULL
 puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
 #puzzle <- sample_puzzle
 draw_puzzle(puzzle)
