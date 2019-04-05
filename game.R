@@ -255,4 +255,5 @@ puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_
 #puzzle <- sample_puzzle
 draw_puzzle(puzzle)
 solutions <- solve_puzzle(puzzle)
+if (is.null(solutions)) print("No Solution")
 
