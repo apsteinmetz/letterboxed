@@ -3,15 +3,10 @@ library(tidyverse)
 library(wfindr)
 library(gtools)
 
-sides <- 4
+sides <- 5
 letters_per_side <- 3
 vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
-
-sample_letters <- "oticljnuaegr" %>% strsplit(split = "") %>% .[[1]]
-sample_puzzle<- tibble(side=rep(1:sides,letters_per_side),
-                                   spot=unlist(map(1:letters_per_side,rep,sides))) %>% 
-  arrange(side,spot) %>% cbind(letter=sample_letters)
 
 # load list of word candidates
 load("data/medium_word_list.rdata")
@@ -128,21 +123,6 @@ draw_solution <- function(puzzle, solution){
   gg <- gg + annotate("text",x=0,y=0.9,label=paste(solution, collapse = "\n"), size = 6)
   print (gg)
   
-  # get_vertex <- function(l){
-  #   return(filter(puzzle,letter==l))
-  # }
-  # 
-  # old_path <- NULL 
-  # for (w in solution){
-  #   gg <- draw_puzzle(puzzle)
-  #   gg <- gg + geom_path(data=old_path,aes(x,y),linetype="dashed")
-  #   path <- map(unlist(strsplit(w,"")),get_vertex) %>% bind_rows()
-  #   for (n in 2:str_length(word)){
-  #     gg <- gg + geom_path(data=path[1:n,],aes(x,y),arrow = arrow())
-  #     print(gg)
-  #   }
-  #   old_path <- path
-  # }
 }
 
 # ------------------------------------------------------
@@ -182,17 +162,6 @@ find_next_words <- function(w,needed_letters){
   return(next_words)
 }
 
-# -----------------------------------------------------
-# find_next_best_word <- function(w,needed_letters){
-#   # puzzle_words is global
-#   # find words that start with last letter of w
-#   next_words<-puzzle_words[str_starts(puzzle_words,str_sub(w,-1))]
-#   # prioritize words by greatest overlap with unused letters
-#   next_word_chars <-  map(next_words,strsplit,split="") %>% unlist(recursive = F)
-#   temp <- map(next_word_chars,function(x) length(setdiff(needed_letters,x)))
-#   next_word <- next_words[which.min(unlist(temp))]
-#   return(next_word)
-# }
 # -----------------------------------------------------
 find_next_best_words <- function(w,needed_letters,max_return=1){
   # the higher max_return is the more words will be traversed.  Careful,
@@ -278,8 +247,6 @@ solve_puzzle <- function (puzzle) {
 # ------------------------------------------------------------------------------
 
 
-sides <- 4
-letters_per_side <- 3
 vowel_count <- sides
 # global variables
 all_puzzle_letters <- NULL
@@ -287,7 +254,7 @@ puzzle_words <- NULL
 solution_list <- NULL
 puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
 #puzzle <- sample_puzzle
-puzzle <- get_letter_coords(puzzle)
+puzzle <- get_letter_coords(puzzle,sides=sides,letters_per_side = letters_per_side)
 draw_puzzle(puzzle)
 solutions <- solve_puzzle(puzzle)
 if (is.null(solutions)) {
