@@ -95,24 +95,54 @@ get_points_on_segment <- function(end_points,num_points){
     as.data.frame()
   return(c)
 }
+
+get_letter_coords <- function(puzzle,sides=4,letters_per_side=3){
+  
+  puzzle_shape <- get_polygon(sides)
+  puzzle<-lapply(1:(nrow(puzzle_shape)-1),
+                     function(p) get_points_on_segment(puzzle_shape[p:(p+1),],letters_per_side)) %>% 
+    bind_rows() %>% 
+    bind_cols(puzzle)
+  return(puzzle)
+}
+
 # -------------------------------------------------------------
 draw_puzzle <-function(puzzle,sides=4,letters_per_side=3){
   
 puzzle_shape <- get_polygon(sides)
-letter_pos<-lapply(1:(nrow(puzzle_shape)-1),
-                    function(p) get_points_on_segment(puzzle_shape[p:(p+1),],letters_per_side)) %>% 
-  bind_rows() %>% 
-  bind_cols(puzzle)
 
 
 gg <- puzzle_shape %>% ggplot(aes(x,y)) + geom_path() + coord_fixed() +
-  geom_point(data=letter_pos,aes(x,y),size=20,color="white") + 
-  geom_text(data=letter_pos,aes(x,y,label = letter),size=10) + 
+  geom_point(data = puzzle,aes(x,y),size=20,color="white") + 
+  geom_text(data = puzzle,aes(x,y,label = letter),size=10) + 
   theme_void() + 
   theme(panel.background = element_rect(fill="pink")) + 
   NULL 
 print(gg)
+return(gg)
+}
 
+# ---------------------------------------------------------
+draw_solution <- function(puzzle, solution){
+  gg <- draw_puzzle(puzzle)
+  gg <- gg + annotate("text",x=0,y=0.9,label=paste(solution, collapse = "\n"), size = 6)
+  print (gg)
+  
+  # get_vertex <- function(l){
+  #   return(filter(puzzle,letter==l))
+  # }
+  # 
+  # old_path <- NULL 
+  # for (w in solution){
+  #   gg <- draw_puzzle(puzzle)
+  #   gg <- gg + geom_path(data=old_path,aes(x,y),linetype="dashed")
+  #   path <- map(unlist(strsplit(w,"")),get_vertex) %>% bind_rows()
+  #   for (n in 2:str_length(word)){
+  #     gg <- gg + geom_path(data=path[1:n,],aes(x,y),arrow = arrow())
+  #     print(gg)
+  #   }
+  #   old_path <- path
+  # }
 }
 
 # ------------------------------------------------------
@@ -173,9 +203,14 @@ find_next_best_words <- function(w,needed_letters,max_return=1){
   # prioritize words by greatest overlap with unused letters
   next_word_chars <-  map(next_words,strsplit,split="") %>% unlist(recursive = F)
   temp <- map(next_word_chars,function(x) length(setdiff(needed_letters,x))) %>% unlist()
-  next_words <- next_words[order(temp)]
-  max_return <- min(length(next_words),max_return)
-  return(next_words[1:max_return])
+  if (is.vector(temp)){
+    next_words <- next_words[order(temp)]
+    max_return <- min(length(next_words),max_return)
+    return(next_words[1:max_return])  
+  } else{
+    return()
+  }
+  
 }
 # -----------------------------------------------------
 test_needed_letters <- function(word_chain){
@@ -196,7 +231,7 @@ make_chain <- function(word_chain,used_last_letters){
     return()
   }
   if (length(needed_letters)==0) {
-    print(c("SOLVED",word_chain))
+    # print(c("SOLVED",word_chain))
     # solved = TRUE
     solution_list[length(solution_list)+1] <<-  list(word_chain)
     return(list(word_chain))
@@ -206,15 +241,14 @@ make_chain <- function(word_chain,used_last_letters){
     last_letter <-str_sub(last_word,-1L)
     if (str_detect(used_last_letters,last_letter,negate=T)){
       used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
-      # next_word<-find_next_best_word(last_word,needed_letters)
-      next_words<-find_next_best_words(last_word,needed_letters,max_return=1)
-      for (next_word in next_words) {
-      #if (length(next_word)>0){
+      next_word<-find_next_best_words(last_word,needed_letters,max_return=1)
+#      next_words<-find_next_best_words(last_word,needed_letters,max_return=1)
+#      for (next_word in next_words) {
+       if (length(next_word)>0){
         word_chain <- make_chain(c(word_chain,next_word),used_last_letters)
-#      } else {
-#        return()
-#      }
-      }
+        } else {
+          return()
+        }
     } else{
       return()
     }
@@ -253,7 +287,14 @@ puzzle_words <- NULL
 solution_list <- NULL
 puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
 #puzzle <- sample_puzzle
+puzzle <- get_letter_coords(puzzle)
 draw_puzzle(puzzle)
 solutions <- solve_puzzle(puzzle)
-if (is.null(solutions)) print("No Solution")
+if (is.null(solutions)) {
+  solution <- "No Solution"
+} else {
+  ideal <- map(solutions,length) %>% unlist() %>% which.min()
+  solution <- solutions[[ideal]] 
+}
+draw_solution(puzzle, solution)
 
