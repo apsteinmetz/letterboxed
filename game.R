@@ -3,13 +3,14 @@ library(tidyverse)
 library(wfindr)
 library(gtools)
 
-sides <- 5
+sides <- 4
 letters_per_side <- 3
 vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
 
 # load list of word candidates
-load("data/medium_word_list.rdata")
+# load("data/medium_word_list.rdata")
+# load("data/short_word_list.rdata")
 word_list <- medium_word_list
 #rm(medium_word_list)
 # ------------------------------------------------------------
@@ -229,7 +230,8 @@ solve_puzzle <- function (puzzle) {
   # get all letter combos that are invalid because they lie on the same line segment
   bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
   #get all possible words
-  puzzle_words <<- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
+  #  puzzle_words <<- scrabble(paste0(puzzle$letter,collapse = ""),words=word_list)
+  puzzle_words <<- scrabble(paste0(puzzle$letter,collapse = ""))
   length(puzzle_words)
   #winnow out illegal ones
   banned_words <- map(bans,function(x) puzzle_words[str_which(puzzle_words,x)]) %>% 
@@ -261,7 +263,6 @@ if (is.null(solutions)) {
   solution <- "No Solution"
 } else {
   ideal <- map(solutions,length) %>% unlist() %>% which.min()
-  solution <- solutions[[ideal]] 
+  solution <- c(solutions[[ideal]],paste(length(solutions)-1,"other solutions")) 
 }
 draw_solution(puzzle, solution)
-
