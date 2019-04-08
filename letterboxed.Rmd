@@ -21,7 +21,7 @@ Just to be cute, let's expand the geometry of the puzzle to an arbitrary number 
 
 First task is to generate the puzzle with random letters.  It would be cruel to place no requirement to use vowels so we also specify a minimum number of vowels to use.
 
-```{r}
+```{r paged.print=FALSE}
 # letterboxed game
 library(tidyverse)
 library(wfindr)
@@ -33,7 +33,8 @@ vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
 
 # ------------------------------------------------------------
-generate_puzzle <- function(sides=4,letters_per_side=3,vowel_count=4,replacement = FALSE){
+generate_puzzle <- function(sides=4,letters_per_side=3,
+                            vowel_count=4,replacement = FALSE){
   if(sides < 4){
     print("Minimum Side is 4, changing to 4")
     sides = 4
@@ -49,7 +50,7 @@ generate_puzzle <- function(sides=4,letters_per_side=3,vowel_count=4,replacement
   spot = 1
   for (i in 1:letters_per_side){
     for(j in 1:sides){
-      #don't put vowel at edge of side but mathematically, it doesn't matter where
+      # don't put vowel at edge of side but it's just cosmetic
       if (i == 2 & vowels_used <= vowel_count){
         letter[spot] <- use_vowels[vowels_used]
         vowels_used <- vowels_used + 1
@@ -68,6 +69,19 @@ generate_puzzle <- function(sides=4,letters_per_side=3,vowel_count=4,replacement
   return(puzzle)
 }
 
+# let's see what this does
+generate_puzzle()
+```
+
+Now we have a data frame with twelve random letters, including four vowels, assigned to one of three spots on four sides.
+
+We designed the generator to work with arbitrary dimensions.  Let's see.
+```{r}
+generate_puzzle(sides=5,letters_per_side = 2)
+```
+
+It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in the Times.  If all we needed to do was make a square the task of drawing it would be trivial but if we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.
+```{r}
 # -------------------------------------------------------------
 get_polygon <- function(sides=4){
   x_center <- 0
@@ -93,16 +107,13 @@ get_points_on_segment <- function(end_points,num_points){
   # pointdistance is fraction of segment length
   a <- as.numeric(end_points[1,])
   b <- as.numeric(end_points[2,])
-
   # Use atan2!
   th = atan2( b[2]-a[2] , b[1]-a[1] )
-  
   # length of segment AB
   AB = sqrt( (b[2]-a[2])^2 + (b[1]-a[1])^2 )
   AB_fraction <- AB / (num_points +1 )
   # points equidistant on the line
   AP = sapply(1:(num_points),function(x) x * AB_fraction)
-  
   # The points of interest
   c = sapply(AP,function(d) c(x = a[1] + d*cos( th ),
                               y = a[2] + d*sin( th ))) %>% 
@@ -110,12 +121,13 @@ get_points_on_segment <- function(end_points,num_points){
     as.data.frame()
   return(c)
 }
-
+# -----------------------------------------------------
 get_letter_coords <- function(puzzle,sides=4,letters_per_side=3){
   
   puzzle_shape <- get_polygon(sides)
   puzzle<-lapply(1:(nrow(puzzle_shape)-1),
-                     function(p) get_points_on_segment(puzzle_shape[p:(p+1),],letters_per_side)) %>% 
+                     function(p) get_points_on_segment(puzzle_shape[p:(p+1),],
+                                                       letters_per_side)) %>% 
     bind_rows() %>% 
     bind_cols(puzzle)
   return(puzzle)
