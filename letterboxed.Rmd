@@ -17,9 +17,9 @@ The steps we'll take are 1) generate the puzzle with random letters 2) draw the 
 
 Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.
 
-Just to be cute, let's expand the geometry of the puzzle to an arbitrary number of sides and number of letters per side.
+Just to be cute, let's optionally expand the geometry of the puzzle to an arbitrary number of sides and number of letters per side, not just a square as we see in The Times.
 
-First task is to generate the puzzle with random letters.  It would be cruel to place no requirement to use vowels so we also specify a minimum number of vowels to use.
+First task is to generate the puzzle with random letters.  It would be cruel to place no requirement to use vowels so we also specify a minimum number of vowels to use.  We sample the required number of consonants and vowels and assign them to each segment of the polygon. The default is 4 sides and 2 consonants and one vowel per side.
 
 ```{r paged.print=FALSE}
 # letterboxed game
@@ -75,13 +75,14 @@ generate_puzzle()
 
 Now we have a data frame with twelve random letters, including four vowels, assigned to one of three spots on four sides.
 
-We designed the generator to work with arbitrary dimensions.  Let's see.
+We designed the generator to work with arbitrary dimensions.  Let's try 5 sides with 2 letters per side.
 ```{r}
 generate_puzzle(sides=5,letters_per_side = 2)
 ```
 
-It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in the Times.  If all we needed to do was make a square the task of drawing it would be trivial but if we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.
-```{r}
+It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in the Times.  If all we needed to do was make a square the task of drawing it would be trivial but, as noted above, I can't leave well enough alone.  If we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.  First we generate the vertices  of our polygon, then the points on each segment where the letters will go (as an aside, I say "vertices," the proper Latin plural  It grinds my gears to see Times printing "vertexes."  They abandoned Latin plurals a decade ago).
+
+```{r},
 # -------------------------------------------------------------
 get_polygon <- function(sides=4){
   x_center <- 0
@@ -104,7 +105,7 @@ get_polygon <- function(sides=4){
 
 # -------------------------------------------------------------
 get_points_on_segment <- function(end_points,num_points){
-  # pointdistance is fraction of segment length
+  # poin tdistance is fraction of segment length
   a <- as.numeric(end_points[1,])
   b <- as.numeric(end_points[2,])
   # Use atan2!
