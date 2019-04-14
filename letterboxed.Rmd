@@ -5,7 +5,7 @@ output: html_notebook
 
 What is the difference between "computer programming" and "data science?"  To someone not invovled in either they look much the same.  Most data scientists are also coders, though they don't need to be.  Data scientists don't  need to be concerned with pointers, stacks, heaps, recursion, etc.
 
-For this post, I go back to my roots in the 1980s as an amateur computer scientist to solve a new New York Times puzzle called "Letterboxed."  I'll confess, I don't like playing games and doing puzzles much.  When I see one I immediately think about an algorithm to play or solve it.
+For this post, I go back to my roots in the 1980s as an amateur computer scientist to solve a new New York Times puzzle called "Letterboxed."  I'll confess, I don't like playing games and doing puzzles much. I also take the fun out of it for other people. When someone gave my kids "Cards Against Humanity" as a gift, I went through the deck and  When I see one I immediately think about an algorithm to play or solve it.
 
 ![sample board](img\sample_board.png)
 
