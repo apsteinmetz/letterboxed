@@ -3,19 +3,21 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-What is the difference between "computer programming" and "data science?"  To someone not invovled in either they look much the same.  Most data scientists are also coders, though they don't need to be.  Data scientists don't  need to be concerned with pointers, stacks, heaps, recursion, etc.
+What is the difference between "computer programming" and "data science?"  To someone not invovled in either they look much the same.  Most data scientists are also coders, though they don't need to be.  Data scientists (especially amateurs like me) don't  need to be concerned with pointers, stacks, heaps, recursion, etc.  This is not a data science post.
 
-For this post, I go back to my roots in the 1980s as an amateur computer scientist to solve a new New York Times puzzle called "Letterboxed."  I'll confess, I don't like playing games and doing puzzles much. I also take the fun out of it for other people. When someone gave my kids "Cards Against Humanity" as a gift, I went through the deck and  When I see one I immediately think about an algorithm to play or solve it.
+For this post, I go back to my roots in the 1980s as an amateur computer scientist to solve a new New York Times puzzle called "Letterboxed." In particular I employ recursion to build a tree of possible solutions.  This exercise reminded me how languages like R allow such easy plug-ins to high powered algorithms written by "real" computer scientists in "real" languages like C++.  Data scientists stand on the shoulders of giants who wrote the low-level code.  
+
+I'll confess, I don't like playing games and doing puzzles much. I also take the fun out of it for other people. When someone gave my kids "Cards Against Humanity" as a gift, I went through the deck and  removed all the really filthy cards (the kids were relieved to see I left in plenty of poop references). My When I see one I immediately think about an algorithm to play or solve it.
 
 ![sample board](img\sample_board.png)
 
-In this game the object is to string words together that use all the letters in the square using as few words as possible by tracing the spelling of each word in the square.  You must start each new word with the last letter of the previous word and you may not use any consecutive letters that lie on the same side of the square.  In the example above, "NIL" or "TAP" would not be permitted.  "TORN" followed by "NEAR" would be fine.
+In "Letterboxed" the object is to string words together that use all the letters in the square using as few words as possible by tracing the spelling of each word in the square.  You must start each new word with the last letter of the previous word and you may not use any consecutive letters that lie on the same side of the square.  In the example above, "NIL" and "LAP" would not be permitted.  "TORN" followed by "NEAR" would be fine.
 
-We will forsake the data science workflow of: source data, clean data, explore data and, finally, analyze data.  Those proceed in a linear fashion but here we'll go over the functions that do specific subroutines to generate and solve these puzzles.
+We will forsake the data science workflow of: ask a question, source data, clean data, explore data and, finally, analyze data.  Those proceed in a linear (in practice, circular) fashion but here we'll go over the functions that do specific subroutines to generate and solve these puzzles.
 
 The steps we'll take are 1) generate the puzzle with random letters 2) draw the board 3) solve the puzzle and 4) print the answer that solves the puzzle in the fewest words.
 
-Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.
+Generating the puzzle is the easy part.
 
 Just to be cute, let's optionally expand the geometry of the puzzle to an arbitrary number of sides and number of letters per side, not just a square as we see in The Times.
 
@@ -82,7 +84,7 @@ generate_puzzle(sides=5,letters_per_side = 2)
 
 It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in the Times.  If all we needed to do was make a square the task of drawing it would be trivial but, as noted above, I can't leave well enough alone.  If we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.  First we generate the vertices  of our polygon, then the points on each segment where the letters will go (as an aside, I say "vertices," the proper Latin plural  It grinds my gears to see Times printing "vertexes."  They abandoned Latin plurals a decade ago).
 
-```{r},
+```{r}
 # -------------------------------------------------------------
 get_polygon <- function(sides=4){
   x_center <- 0
@@ -163,9 +165,16 @@ draw_solution <- function(puzzle, solution){
 d_permute <- function(v, n, r,  set, repeats.allowed){
   return(permutations(n, r, v, set, repeats.allowed))
 }
+```
+Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.  I always struggled with Scrabble. My Mom, whose native language was German was the champion in our famaily. Consequently, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the tiles "ABAHRTY".
 
+```{r}
+grep("^[abahrty]*$",wfindr::words.eng,value = T)
+```
 
+112 words out of a corpus of over 260 thousand.  Instantly.  That's all the code it takes?  That's nuts!  That's efficient low-level coding.  `wfindr` wraps that bit of magic with some bells and whistles to aid with word puzzles but it's not much more than that.
 
+```{r}
 # ------------------------------------------------------
 # SOLVING SECTION
 # -----------------------------------------------------
