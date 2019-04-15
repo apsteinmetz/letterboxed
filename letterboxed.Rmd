@@ -82,7 +82,7 @@ We designed the generator to work with arbitrary dimensions.  Let's try 5 sides 
 generate_puzzle(sides=5,letters_per_side = 2)
 ```
 
-It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in the Times.  If all we needed to do was make a square the task of drawing it would be trivial but, as noted above, I can't leave well enough alone.  If we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.  First we generate the vertices  of our polygon, then the points on each segment where the letters will go (as an aside, I say "vertices," the proper Latin plural  It grinds my gears to see Times printing "vertexes."  They abandoned Latin plurals a decade ago).
+It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in the Times.  If all we needed to do was make a square the task of drawing it would be trivial but, as noted above, I can't leave well enough alone.  If we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.  First we generate the vertices  of our polygon, then the points on each segment where the letters will go (as an aside, I say "vertices," the proper Latin plural.  The "newspaper of record" abandoned Latin plurals a decade ago. It grinds my gears to see the Times printing "vertexes").
 
 ```{r}
 # -------------------------------------------------------------
@@ -148,31 +148,34 @@ gg <- puzzle_shape %>% ggplot(aes(x,y)) + geom_path() + coord_fixed() +
   theme_void() + 
   theme(panel.background = element_rect(fill="pink")) + 
   NULL 
-print(gg)
 return(gg)
 }
 
-# ---------------------------------------------------------
-draw_solution <- function(puzzle, solution){
-  gg <- draw_puzzle(puzzle)
-  gg <- gg + annotate("text",x=0,y=0.9,label=paste(solution, collapse = "\n"), size = 6)
-  print (gg)
-  
-}
+# Draw puzzle sample
+generate_puzzle() %>%
+  get_letter_coords(sides=sides,letters_per_side = letters_per_side) %>% 
+  draw_puzzle()
+```
 
+```{r}
 # ------------------------------------------------------
 # dplyr chain-friendly permuatations
 d_permute <- function(v, n, r,  set, repeats.allowed){
   return(permutations(n, r, v, set, repeats.allowed))
 }
 ```
-Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.  I always struggled with Scrabble. My Mom, whose native language was German was the champion in our famaily. Consequently, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the tiles "ABAHRTY".
+
+# Solve the Puzzle
+
+Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.My Mom, whose native language was German, was the champion in our famaily.   I always struggled. Consequently, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the tiles "ABAHRTY".
 
 ```{r}
 grep("^[abahrty]*$",wfindr::words.eng,value = T)
 ```
 
-112 words out of a corpus of over 260 thousand.  Instantly.  That's all the code it takes?  That's nuts!  That's efficient low-level coding.  `wfindr` wraps that bit of magic with some bells and whistles to aid with word puzzles but it's not much more than that.
+112 words out of a corpus of over 260 thousand.  Instantly.  That's all the code it takes?  That's nuts!  That's efficient low-level coding.  `wfindr` wraps that bit of magic with some bells and whistles to aid with word puzzles.
+
+
 
 ```{r}
 # ------------------------------------------------------
@@ -264,7 +267,12 @@ make_chain <- function(word_chain,used_last_letters){
       return()
     }
   }
-}  
+} 
+```
+
+
+```{r}
+
 # ------------------------------------------------------------------------------
 
 solve_puzzle <- function (puzzle) {
@@ -305,6 +313,17 @@ if (is.null(solutions)) {
   ideal <- map(solutions,length) %>% unlist() %>% which.min()
   solution <- c(solutions[[ideal]],paste(length(solutions)-1,"other solutions")) 
 }
+```
+
+```{r}
+# ---------------------------------------------------------
+draw_solution <- function(puzzle, solution){
+  gg <- draw_puzzle(puzzle)
+  gg <- gg + annotate("text",x=0,y=0.9,label=paste(solution, collapse = "\n"), size = 6)
+  print (gg)
+  
+}
+
 draw_solution(puzzle, solution)
 ```
 
