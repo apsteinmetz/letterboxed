@@ -1,29 +1,33 @@
 ---
-title: "R Notebook"
+title: "Solving the *Letterboxed* Puzzle"
 output: html_notebook
 ---
 
-What is the difference between "computer programming" and "data science?"  To someone not invovled in either they look much the same.  Most data scientists are also coders, though they don't need to be.  Data scientists (especially amateurs like me) don't  need to be concerned with pointers, stacks, heaps, recursion, etc.  This is not a data science post.
+What is the difference between "computer programming" and "data science?"  To someone not invovled in either they look much the same.  Most data scientists are also coders, though they don't need to be.  Data scientists (especially amateurs like me) don't  need to be concerned with pointers, stacks, heaps, recursion, etc., but this is not a data science post.
 
-For this post, I go back to my roots in the 1980s as an amateur computer scientist to solve a new New York Times puzzle called "Letterboxed." In particular I employ recursion to build a tree of possible solutions.  This exercise reminded me how languages like R allow such easy plug-ins to high powered algorithms written by "real" computer scientists in "real" languages like C++.  Data scientists stand on the shoulders of giants who wrote the low-level code.  
+For this post, I go back to my roots in the 1980s as an amateur computer scientist to solve a new *New York Times* puzzle called "Letterboxed." In particular I employ recursion to build a tree of possible solutions.  This exercise reminded me how languages like R allow such easy plug-ins to high-powered algorithms written by "real" computer scientists in "real" languages like C++.  Data scientists stand on the shoulders of giants who wrote the low-level code.  
 
-I'll confess, I don't like playing games and doing puzzles much. I also take the fun out of it for other people. When someone gave my kids "Cards Against Humanity" as a gift, I went through the deck and  removed all the really filthy cards (the kids were relieved to see I left in plenty of poop references). My When I see one I immediately think about an algorithm to play or solve it.
+I'll confess, I don't like playing games and doing puzzles much. I also take the fun out of it for other people. When someone gave my kids "Cards Against Humanity" as a gift, I went through the deck and  removed all the really filthy cards (the kids were relieved to see I left in plenty of poop references). When I see one I immediately think about an algorithm to play or solve it.
 
-![sample board](img\sample_board.png)
+![Sample Board from *The New York Times*](img\sample_board.png)
 
 In "Letterboxed" the object is to string words together that use all the letters in the square using as few words as possible by tracing the spelling of each word in the square.  You must start each new word with the last letter of the previous word and you may not use any consecutive letters that lie on the same side of the square.  In the example above, "NIL" and "LAP" would not be permitted.  "TORN" followed by "NEAR" would be fine.
 
-We will forsake the data science workflow of: ask a question, source data, clean data, explore data and, finally, analyze data.  Those proceed in a linear (in practice, circular) fashion but here we'll go over the functions that do specific subroutines to generate and solve these puzzles.
+Today we will forsake the usual data science workflow of: ask a question, source data, clean data, explore data and, finally, analyze data.  Those proceed in a linear (in practice, circular) fashion but here we'll go over the functions that do specific subroutines to generate and solve these puzzles.
 
-The steps we'll take are 1) generate the puzzle with random letters 2) draw the board 3) solve the puzzle and 4) print the answer that solves the puzzle in the fewest words.
+The steps we'll take are 
+
+1. Generate the puzzle with random letters. 
+2. Draw the board.
+3. Solve the puzzle.
+4. Print the answer that solves the puzzle in the fewest words.
 
 Generating the puzzle is the easy part.
 
-Just to be cute, let's optionally expand the geometry of the puzzle to an arbitrary number of sides and number of letters per side, not just a square as we see in The Times.
+The first task is to generate the puzzle with random letters.  It would be cruel to place no requirement to use vowels so we also specify a minimum number of vowels.  We sample the required number of consonants and vowels and assign them to each segment of the polygon. The default is 4 sides and 2 consonants and one vowel per side.
 
-First task is to generate the puzzle with random letters.  It would be cruel to place no requirement to use vowels so we also specify a minimum number of vowels to use.  We sample the required number of consonants and vowels and assign them to each segment of the polygon. The default is 4 sides and 2 consonants and one vowel per side.
-
-```{r paged.print=FALSE}
+Just to be cute, let's write the function so we can optionally expand the geometry of the puzzle to an arbitrary number of sides and number of letters per side, not just a square as we see in *The Times*.
+```{r}
 # letterboxed game
 library(tidyverse)
 library(wfindr)
@@ -34,9 +38,14 @@ letters_per_side <- 3
 vowels <- c("a","e","i","o","u")
 consonants <- letters[!(letters %in% vowels)]
 
+# scrabble dictionary from wfinder. You can subsitute any list
+# you desire, in any language.
+word_list <- words.eng
+
 # ------------------------------------------------------------
 generate_puzzle <- function(sides=4,letters_per_side=3,
                             vowel_count=4,replacement = FALSE){
+  set.seed(1234567) # delete this line or you will get the same puzzle every time
   if(sides < 4){
     print("Minimum Side is 4, changing to 4")
     sides = 4
@@ -77,12 +86,7 @@ generate_puzzle()
 
 Now we have a data frame with twelve random letters, including four vowels, assigned to one of three spots on four sides.
 
-We designed the generator to work with arbitrary dimensions.  Let's try 5 sides with 2 letters per side.
-```{r}
-generate_puzzle(sides=5,letters_per_side = 2)
-```
-
-It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in the Times.  If all we needed to do was make a square the task of drawing it would be trivial but, as noted above, I can't leave well enough alone.  If we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.  First we generate the vertices  of our polygon, then the points on each segment where the letters will go (as an aside, I say "vertices," the proper Latin plural.  The "newspaper of record" abandoned Latin plurals a decade ago. It grinds my gears to see the Times printing "vertexes").
+It's not necessary to solve the puzzle, but it would be nice to draw the puzzle in the style that appears in *The Times*.  If all we needed to do was make a square the task of drawing it would be trivial but, as noted above, I can't leave well enough alone.  If we want to make polygons of arbitrary sizes so we need to do a bit of trigonometry.  First we generate the vertices  of our polygon, then the points on each segment where the letters will go (as an aside, I say "vertices," the proper Latin plural.  The "newspaper of record" abandoned Latin plurals a decade ago. It grinds my gears to see the Times printing "vertexes").
 
 ```{r}
 # -------------------------------------------------------------
@@ -157,56 +161,32 @@ generate_puzzle() %>%
   draw_puzzle()
 ```
 
+Remember we designed the generator to work with arbitrary dimensions.  Let's try 5 sides with 2 letters per side.
 ```{r}
-# ------------------------------------------------------
-# dplyr chain-friendly permuatations
-d_permute <- function(v, n, r,  set, repeats.allowed){
-  return(permutations(n, r, v, set, repeats.allowed))
-}
+generate_puzzle(5,2) %>%
+  get_letter_coords(5,2) %>% 
+  draw_puzzle(5,2)
 ```
+
+Fun!
 
 # Solve the Puzzle
 
-Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.My Mom, whose native language was German, was the champion in our famaily.   I always struggled. Consequently, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the tiles "ABAHRTY".
+Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.My Mom, whose native language was German, was the champion in our family.   I always struggled even though I liked to brag about my high SAT verbal score. I am grateful to Mom for knocking me down a peg.  Anyhoo, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the Scrabble tiles "ABAHRTY".
 
 ```{r}
-grep("^[abahrty]*$",wfindr::words.eng,value = T)
+grep("^[abahrty]*$",word_list,value = T)
 ```
 
-112 words out of a corpus of over 260 thousand.  Instantly.  That's all the code it takes?  That's nuts!  That's efficient low-level coding.  `wfindr` wraps that bit of magic with some bells and whistles to aid with word puzzles.
+112 words out of a corpus of over 260 thousand.  Instantly.  That's all the code it takes?  That's nuts!  That's efficient low-level coding.  `wfindr` wraps that bit of magic with some bells and whistles to aid with word puzzles.  In particular it crafts regexes that conform to the rules of scrabble.  The example above creates a word list that might use more of a letter than we have in our tiles.  To fix that, the simple regex I show above gets converted to a much fancier one.
+```{r}
+model_to_regex(allow="abahrty",type="scrabble")
+```
+Whoa! Like I said.  It's a dark art.
 
-
+We have all the possible words to use in the puzzle.  Just throwing random words from the solution set around would eventually find some answers but we can do much better than that.  To find the "best" next word, we can pick the word that has the most yet-unused letters.  By default, the function below returns one word but it could return more.  In practice, I found iterating through more words was rarely necessary to get a solution but drastically increased computation time and memory usage of the recursive function that calls it. 
 
 ```{r}
-# ------------------------------------------------------
-# SOLVING SECTION
-# -----------------------------------------------------
-get_line_combos <- function(a_side,puzzle){
-  combos <- puzzle %>% filter(side==a_side) %>% 
-    pull(letter) %>% 
-    as.character() %>% 
-    d_permute(n=3,r=2,set=F,repeats.allowed = T) %>% 
-    apply(1,paste0,collapse="")
-  return(combos)
-}
-
-# -----------------------------------------------------
-find_next_words <- function(w,needed_letters){
-  # find words that start with last letter of w
-  next_words<-puzzle_words[str_starts(puzzle_words,str_sub(w,-1))]
-  # prefer larger words that touch more letters
-  # OR prioritize words by greatest overlap with unused letters
-  next_word_chars <-  map(next_words,strsplit,split="") %>% unlist(recursive = F)
-  #temp <- map(next_word_chars,function(x) length(setdiff(needed_letters,x)))
-  #next_words[which.min(unlist(temp))]
-    #return minimum words by unique last letter
-  last_letters <- str_sub(next_words,-1L) %>% unique()
-  next_words <- map(last_letters,function(x) next_words[match(TRUE,endsWith(next_words,x))]) %>%
-    unlist()
-  
-  return(next_words)
-}
-
 # -----------------------------------------------------
 find_next_best_words <- function(w,needed_letters,max_return=1){
   # the higher max_return is the more words will be traversed.  Careful,
@@ -227,6 +207,7 @@ find_next_best_words <- function(w,needed_letters,max_return=1){
   
 }
 # -----------------------------------------------------
+# check if we have used all the letters yet
 test_needed_letters <- function(word_chain){
   word_chain_chars <-  paste0(word_chain,collapse = "") %>% 
     strsplit(split="") %>%
@@ -235,19 +216,27 @@ test_needed_letters <- function(word_chain){
   return(setdiff(all_puzzle_letters,
                      word_chain_chars))
 }
+```
+Now we come to the workhorse recursive function.  "Recursive" just means it calls itself.  I've learned the trick to recursive functions is getting out of them, otherwise you get trapped and run out of memory pretty quickly.  At least nowadays you kids don't have to worry about the whole machine crashing.  You can just nuke the process that's stuck.  
 
-# make word chains
-# ---------------------------------------------------------------------
+We start by iterating `make_chain` over the full list of valid words.  Naturally we expect to find a solution before traversing much of the list.  We build the solution chain by choosing a word that ends with a letter that has not been an ending letter yet. Otherwise we might chase our tail forever if a solution doesn't lie on that path.  Then we pick the best next word as described above. Then we call `make_chain` again and again and again.
+
+Here we limit the solution chain to a maximum of five words.  Each time `make_chain` is called we run some tests and climb back out of the recursive stack if one of these conditions has been met:
+
+1. The chain is more than five words with no solution.
+2. A solution is found.
+3. We run out of last letter/first letter possibilities
+4. The are no next words found.
+
+```{r}
 make_chain <- function(word_chain,used_last_letters){
   needed_letters <- test_needed_letters(word_chain)
   if (length(word_chain)>6){
-    # come on, if you can't solve in 5, you suck!
+    # Come on, if you can't solve in 5 words, you suck!
     return()
   }
   if (length(needed_letters)==0) {
-    # print(c("SOLVED",word_chain))
-    # solved = TRUE
-    solution_list[length(solution_list)+1] <<-  list(word_chain)
+    # Yay! We have a solution.
     return(list(word_chain))
   }
   else {
@@ -256,8 +245,6 @@ make_chain <- function(word_chain,used_last_letters){
     if (str_detect(used_last_letters,last_letter,negate=T)){
       used_last_letters <- paste0(last_letter,used_last_letters,collapse = "")
       next_word<-find_next_best_words(last_word,needed_letters,max_return=1)
-#      next_words<-find_next_best_words(last_word,needed_letters,max_return=1)
-#      for (next_word in next_words) {
        if (length(next_word)>0){
         word_chain <- make_chain(c(word_chain,next_word),used_last_letters)
         } else {
@@ -271,10 +258,9 @@ make_chain <- function(word_chain,used_last_letters){
 ```
 
 
+The function `solve_puzzle` is a wrapper around `make_chain` that first gets all the possible words that our letters allow, removing words that violate the rule of no consecutive letters from the same line. Note the use of the `<<--` assignment operator that accesses global variables from within functions. This practice is frowned upon in some circles but, since we are using nested recursion, I didn't want to make new copies of every variable each time `make_chain` is called.
+
 ```{r}
-
-# ------------------------------------------------------------------------------
-
 solve_puzzle <- function (puzzle) {
   # get all letter combos that are invalid because they lie on the same line segment
   bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
@@ -294,41 +280,61 @@ solve_puzzle <- function (puzzle) {
   solutions <- map(puzzle_words,make_chain,"") %>% unlist(recursive = F)
   return(solutions)
 }
-# ------------------------------------------------------------------------------
-
-
+```
+Whew! Now let's actually solve a puzzle.  The `solve_puzzle` function returns a list of lists with all the found solutions.
+```{r}
 vowel_count <- sides
 # global variables
 all_puzzle_letters <- NULL
 puzzle_words <- NULL
-solution_list <- NULL
-puzzle <- generate_puzzle(sides=sides,letters_per_side = letters_per_side,vowel_count = vowel_count)
-#puzzle <- sample_puzzle
-puzzle <- get_letter_coords(puzzle,sides=sides,letters_per_side = letters_per_side)
-draw_puzzle(puzzle)
+puzzle <- generate_puzzle(sides=sides,
+                          letters_per_side = letters_per_side,
+                          vowel_count = vowel_count)
+# add letter coordinates for plot
+puzzle <- get_letter_coords(puzzle,
+                            sides=sides,
+                            letters_per_side = letters_per_side)
+#draw_puzzle(puzzle)
 solutions <- solve_puzzle(puzzle)
-if (is.null(solutions)) {
-  solution <- "No Solution"
-} else {
-  ideal <- map(solutions,length) %>% unlist() %>% which.min()
-  solution <- c(solutions[[ideal]],paste(length(solutions)-1,"other solutions")) 
-}
+
+solutions %>% head()
 ```
 
+We may have hundreds of solutions or none. You can look at the `solutions` variable to see all we found.  The goal of *The Times* puzzle is to solve in the minimum number of words so we'll take the solution with the least number of words (there may be many) and print that on the puzzle.
 ```{r}
 # ---------------------------------------------------------
-draw_solution <- function(puzzle, solution){
+draw_solution <- function(puzzle, solutions){
+  if (is.null(solutions)) {
+    solution <- "No Solution"
+  } else {
+    ideal <- map(solutions,length) %>% unlist() %>% which.min()
+    solution <- c(solutions[[ideal]],paste(length(solutions)-1,"other solutions")) 
+  }
   gg <- draw_puzzle(puzzle)
   gg <- gg + annotate("text",x=0,y=0.9,label=paste(solution, collapse = "\n"), size = 6)
   print (gg)
-  
 }
 
-draw_solution(puzzle, solution)
+draw_solution(puzzle, solutions)
+```
+Let's go back to the image at the top of this post which is from *The Times*.  We'll use those letters to solve an actual puzzle.  Do the puzzle authors generate the puzzles randomly or do they work backword from a selected word list?  I have no idea.
+
+```{r}
+sample_letters <- "taperdnilyco"
+puzzle <- generate_puzzle() %>% get_letter_coords()
+#replace random letters with the one in the known puzzle
+puzzle$letter <- strsplit(sample_letters,split = NULL) %>% unlist()
+solutions <- solve_puzzle(puzzle)
+solutions %>% head()
+```
+We found 851 solutions to this particular puzzle, quite a few.  Furthermore, If you are really good, you could solve this puzzle with two words!
+
+```{r}
+draw_solution(puzzle, solutions)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+There you have it. You might grumble that too many of the words in the scrabble dictionary are not in your vocabulary.  They certainly aren't in mine.  Feel free to use a shorter word list with more common words. [Here are a bunch](https://norvig.com/ngrams/). That will increase the liklihood that no solution is found, though. 
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+Further work that might be done would be to filter for completely unique solutions, with no overlapping words.  Also we might create a Shiny application that does pretty animation drawing lines across the puzzle of the solution.
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+Naturally, you should only use this code to check your answer.  No cheating!
