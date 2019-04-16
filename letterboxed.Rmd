@@ -108,7 +108,6 @@ get_polygon <- function(sides=4){
   y[i+1] <- y[1]
   return(data.frame(x=x,y=y))
 }
-
 # -------------------------------------------------------------
 get_points_on_segment <- function(end_points,num_points){
   # poin tdistance is fraction of segment length
@@ -139,19 +138,15 @@ get_letter_coords <- function(puzzle,sides=4,letters_per_side=3){
     bind_cols(puzzle)
   return(puzzle)
 }
-
 # -------------------------------------------------------------
 draw_puzzle <-function(puzzle,sides=4,letters_per_side=3){
-  
-puzzle_shape <- get_polygon(sides)
-
-
-gg <- puzzle_shape %>% ggplot(aes(x,y)) + geom_path() + coord_fixed() +
-  geom_point(data = puzzle,aes(x,y),size=20,color="white") + 
-  geom_text(data = puzzle,aes(x,y,label = letter),size=10) + 
-  theme_void() + 
-  theme(panel.background = element_rect(fill="pink")) + 
-  NULL 
+  puzzle_shape <- get_polygon(sides)
+  gg <- puzzle_shape %>% ggplot(aes(x,y)) + geom_path() + coord_fixed() +
+    geom_point(data = puzzle,aes(x,y),size=20,color="white") + 
+    geom_text(data = puzzle,aes(x,y,label = letter),size=10) + 
+    theme_void() + 
+    theme(panel.background = element_rect(fill="pink")) + 
+    NULL 
 return(gg)
 }
 
@@ -172,7 +167,7 @@ Fun!
 
 # Solve the Puzzle
 
-Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language.My Mom, whose native language was German, was the champion in our family.   I always struggled even though I liked to brag about my high SAT verbal score. I am grateful to Mom for knocking me down a peg.  Anyhoo, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the Scrabble tiles "ABAHRTY".
+Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language. My Mom, whose native language was German, was the champion in our family.   I always struggled even though I liked to brag about my high SAT verbal score. I am grateful to Mom for knocking me down a peg.  Anyhoo, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the Scrabble tiles "ABAHRTY".
 
 ```{r}
 grep("^[abahrty]*$",word_list,value = T)
@@ -182,12 +177,11 @@ grep("^[abahrty]*$",word_list,value = T)
 ```{r}
 model_to_regex(allow="abahrty",type="scrabble")
 ```
-Whoa! Like I said.  It's a dark art.
+Whoa! Like I said.  It's regex is a dark art.
 
-We have all the possible words to use in the puzzle.  Just throwing random words from the solution set around would eventually find some answers but we can do much better than that.  To find the "best" next word, we can pick the word that has the most yet-unused letters.  By default, the function below returns one word but it could return more.  In practice, I found iterating through more words was rarely necessary to get a solution but drastically increased computation time and memory usage of the recursive function that calls it. 
+Now we have all the possible words to use in the puzzle.  Just throwing random words around from the solution set would eventually find some answers but we can do much better than that.  To find the "best" next word, we can pick the word that has the most yet-unused letters.  By default, the function below returns one word but it could return more.  In practice, I found iterating through more words was rarely necessary to get a solution but drastically increased computation time and memory usage of the recursive function that calls it. 
 
 ```{r}
-# -----------------------------------------------------
 find_next_best_words <- function(w,needed_letters,max_return=1){
   # the higher max_return is the more words will be traversed.  Careful,
   # computation times will geometrically increase.
@@ -204,7 +198,6 @@ find_next_best_words <- function(w,needed_letters,max_return=1){
   } else{
     return()
   }
-  
 }
 # -----------------------------------------------------
 # check if we have used all the letters yet
@@ -219,7 +212,7 @@ test_needed_letters <- function(word_chain){
 ```
 Now we come to the workhorse recursive function.  "Recursive" just means it calls itself.  I've learned the trick to recursive functions is getting out of them, otherwise you get trapped and run out of memory pretty quickly.  At least nowadays you kids don't have to worry about the whole machine crashing.  You can just nuke the process that's stuck.  
 
-We start by iterating `make_chain` over the full list of valid words.  Naturally we expect to find a solution before traversing much of the list.  We build the solution chain by choosing a word that ends with a letter that has not been an ending letter yet. Otherwise we might chase our tail forever if a solution doesn't lie on that path.  Then we pick the best next word as described above. Then we call `make_chain` again and again and again.
+We start by preparing to iterate `make_chain` over the full list of valid words.  Naturally we expect to find a solution before traversing much of the list.  We build the solution chain by choosing a word that ends with a letter that has not been an ending letter yet. Otherwise we might chase our tail forever if a solution doesn't lie on that path.  Then we pick the best next word as described above. Then we call `make_chain` again and again and again.
 
 Here we limit the solution chain to a maximum of five words.  Each time `make_chain` is called we run some tests and climb back out of the recursive stack if one of these conditions has been met:
 
@@ -248,19 +241,34 @@ make_chain <- function(word_chain,used_last_letters){
        if (length(next_word)>0){
         word_chain <- make_chain(c(word_chain,next_word),used_last_letters)
         } else {
+          # no next word found
           return()
         }
     } else{
+      # start of next word would be a letter that has already been used
       return()
     }
   }
 } 
 ```
-
-
 The function `solve_puzzle` is a wrapper around `make_chain` that first gets all the possible words that our letters allow, removing words that violate the rule of no consecutive letters from the same line. Note the use of the `<<--` assignment operator that accesses global variables from within functions. This practice is frowned upon in some circles but, since we are using nested recursion, I didn't want to make new copies of every variable each time `make_chain` is called.
 
 ```{r}
+# dplyr chain-friendly permuatations
+d_permute <- function(v, n, r,  set, repeats.allowed){
+  return(permutations(n, r, v, set, repeats.allowed))
+}
+
+get_line_combos <- function(a_side,puzzle){
+  combos <- puzzle %>% filter(side==a_side) %>% 
+    pull(letter) %>% 
+    as.character() %>% 
+    d_permute(n=3,r=2,set=F,repeats.allowed = T) %>% 
+    apply(1,paste0,collapse="")
+  return(combos)
+}
+
+
 solve_puzzle <- function (puzzle) {
   # get all letter combos that are invalid because they lie on the same line segment
   bans <- map(1:sides,get_line_combos,puzzle=puzzle) %>% unlist()
