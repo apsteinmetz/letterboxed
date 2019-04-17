@@ -7,7 +7,7 @@ What is the difference between "computer programming" and "data science?"  To so
 
 For this post, I go back to my roots in the 1980s as an amateur computer scientist to solve a new *New York Times* puzzle called "Letterboxed." In particular I employ recursion to build a tree of possible solutions.  This exercise reminded me how languages like R allow such easy plug-ins to high-powered algorithms written by "real" computer scientists in "real" languages like C++.  Data scientists stand on the shoulders of giants who wrote the low-level code.  
 
-I'll confess, I don't like playing games and doing puzzles much. I also take the fun out of it for other people. When someone gave my kids "Cards Against Humanity" as a gift, I went through the deck and  removed all the really filthy cards (the kids were relieved to see I left in plenty of poop references). When I see one I immediately think about an algorithm to play or solve it.
+I'll confess, I don't like playing games and doing puzzles much. I also take the fun out of it for other people. When someone gave my kids "Cards Against Humanity" as a gift, I went through the deck and  removed all the really filthy cards (the kids were relieved to see I left in plenty of poop references). When I see a puzzle I immediately think about an algorithm to play or solve it.
 
 ![Sample Board from *The New York Times*](img\sample_board.png)
 
@@ -24,7 +24,7 @@ The steps we'll take are
 
 Generating the puzzle is the easy part.
 
-The first task is to generate the puzzle with random letters.  It would be cruel to place no requirement to use vowels so we also specify a minimum number of vowels.  We sample the required number of consonants and vowels and assign them to each segment of the polygon. The default is 4 sides and 2 consonants and one vowel per side.
+The first task is to generate the puzzle with random letters.  It would be cruel to place no requirement to use vowels so we also specify a minimum number of vowels.  We sample the required number of consonants and vowels and assign them to each segment of the polygon. The default is four sides and two consonants and one vowel per side.
 
 Just to be cute, let's write the function so we can optionally expand the geometry of the puzzle to an arbitrary number of sides and number of letters per side, not just a square as we see in *The Times*.
 ```{r}
@@ -156,7 +156,7 @@ generate_puzzle() %>%
   draw_puzzle()
 ```
 
-Remember we designed the generator to work with arbitrary dimensions.  Let's try 5 sides with 2 letters per side.
+Remember, we designed the generator to work with arbitrary dimensions.  Let's try 5 sides with 2 letters per side.
 ```{r}
 generate_puzzle(5,2) %>%
   get_letter_coords(5,2) %>% 
@@ -167,7 +167,7 @@ Fun!
 
 # Solve the Puzzle
 
-Much of the grunt work is done by the `wfinder` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language. My Mom, whose native language was German, was the champion in our family.   I always struggled even though I liked to brag about my high SAT verbal score. I am grateful to Mom for knocking me down a peg.  Anyhoo, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the Scrabble tiles "ABAHRTY".
+Much of the grunt work is done by the `wfindr` package, which generates a word list from an aribtrary set of letters, as in Scrabble. Unlike Scrabble, we CAN reuse the same letter more than once.  This package also contains a list of English words we use.  You can substitute any word list you like, in any language. My Mom, whose native language was German, was the champion in our family.   I always struggled even though I liked to brag about my high SAT verbal score. I am grateful to Mom for knocking me down a peg.  Anyhoo, I am really in awe of the power of the `grep` function.  Regexes are a dark art to me.  The idea that a short line could find every possible word in an instant boggles (don't like that game either) the mind.  Suppose you pull the Scrabble tiles "ABAHRTY".
 
 ```{r}
 grep("^[abahrty]*$",word_list,value = T)
