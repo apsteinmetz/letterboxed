@@ -17,6 +17,13 @@ if (file.exists("wordle.rdata")){
 source("data/wordle_official2.r")
 worldle_list <- wordle_dict_Aa
 
+# override model to regex
+# this disables the model check to allow additional
+# regex operators, specifically to allow "^" the negate operator
+# careful.  this disables all checking
+# source("my_model_to_regex.r")
+
+
 # get letter frequencies
 letter_freq <-wordle_list %>% str_split(pattern="") %>% 
   unlist() %>% 
@@ -60,14 +67,26 @@ start_word <- scrabble(letter_freq$value[1:5],words = wordle_list)[1]
 next_best_words <- function(yes_letters,no_letters,yes_pos){
   # yes_pos is known positions of the form "y...." if y is in the first pos
   first_cut<-find_word(model=yes_pos,ban=no_letters,words = wordle_list)
-  yes_regex <- paste0(rep_len(paste0("[",yes_letters,"]"),
-                              str_length(yes_letters)),collapse="")
+  next_cut <- first_cut
   
-  # now get the subset of most frequent letters to choose the "best" word
-  next_cut <- enframe(grep(yes_regex,first_cut,value = T,perl=T)) %>% 
-    mutate(score = score_word(value)) %>% 
-    arrange(desc(score))
-  return(next_cut$value[1:10])
+  #ensure all yes letters appear in word
+  for (l in letter_vec(yes_letters)){
+    next_cut <- grep(paste0("[a-z]*",l,"[a-z]*",collapse = ""),
+                     next_cut,
+                     value = T)
+  }
+  #ensure excluded letter positions don't appear
+  # TBD
+
+  # yes_regex <- paste0(rep_len(paste0("[",yes_letters,"]"),
+  #                             str_length(yes_letters)),collapse="")
+  # 
+  # # now get the subset of most frequent letters to choose the "best" word
+  # next_cut <- enframe(grep(yes_regex,first_cut,value = T,perl=T)) %>% 
+  #   mutate(score = score_word(value)) %>% 
+  #   arrange(desc(score))
+  # return(next_cut$value[1:10])
+  return(next_cut[1:10])
 }
 
 no_letters <- ""
@@ -88,7 +107,6 @@ repeat {
                        collapse = "")
   cat("Enter a template for letters that you know the position of..\n")
   cat("Type a string of 5 characters. Use '.'where the letter is unknown.")
-  cat("Example: If ÿ is the first letter and l is the fourth type 'y..l.' ")
   yes_pos <- readline("Use '.....' if you know the position of no letters:")
   cat('Next 10 best words are:\n')
   writeLines("\n")
