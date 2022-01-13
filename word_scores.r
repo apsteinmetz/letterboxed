@@ -1,6 +1,7 @@
 # compute word values
 
-source("data\wordle_official2.r")
+# load word list
+source("data/wordle_official2.r")
 
 # use the smaller, 2315 word list from which the winners are drawn
 # note the allowable guess list is much bigger
@@ -148,75 +149,3 @@ scored_words <- tibble(word = words,naive_score=word_scores_1) %>%
 
 save(scored_words,file="data/scored_words_aa.rdata")
 
-#Naive Plot
-letter_freq %>% 
-  arrange(value) %>% 
-  mutate(n = n/length(words)) %>% 
-  ggplot(aes(value,n,fill=n)) + 
-  geom_col() + 
-  scale_fill_distiller(palette = "Greens",
-                       values = scales::rescale(1.2^(1:9)),
-                       direction = 1) +
-  theme(legend.position = "none") +
-  labs(y="Probability That Letter Occurs in Word",
-       x = "Letter")
-
-
-# Bigram Plot
-#show top 10 at each position
-bigram_freq %>% 
-  group_by(position) %>% 
-  mutate(bigram = toupper(bigram)) %>% 
-  slice_max(probability,n=5) %>%  
-  mutate(position = as.factor(position)) %>% 
-  mutate(bigram = as.factor(bigram)) %>% 
-  #  mutate(bigram = as.factor(as.character(bigram))) %>% 
-  #  complete(position,bigram,fill=list(probability=0)) %>% 
-  ggplot(aes(position,bigram,fill=probability)) + 
-  geom_tile() + 
-  labs(title = "Probability of Most Frequent Wordle Bigrams") +
-  scale_fill_distiller(palette = "Greens",
-                       values = scales::rescale(1.2^(1:9)),
-                       direction = 1)
-
-
-# Simmering Plot
-letter_matches %>%
-  bind_rows() %>%
-  group_by(
-    letter, character_index
-  ) %>%
-  summarize(
-    `Yellow` = mean(yellow),
-    `Green` = mean(green),
-    `Green or Yellow` = mean(green | yellow),
-    .groups = "drop"
-  ) %>%
-  gather(color, prob, -letter, -character_index) %>%
-  mutate(color = forcats::fct_relevel(color, "Green or Yellow")) %>%
-  ggplot(aes(x = letter, 
-             y = character_index,
-             fill = prob)) + 
-  geom_tile() + 
-  facet_grid(rows = vars(color)) + 
-  labs(x = "", 
-       y = "Letter Position", 
-       fill = "Probability of Match") + 
-  scale_fill_distiller(palette = "Spectral") + 
-  theme(legend.position = "bottom")
-
-# --------------------------------------------
-naive_prob <- letter_matches %>% bind_rows() %>%
-  group_by(
-    letter, character_index
-  ) %>%
-  summarize(
-    yellow = mean(yellow),
-    green = mean(green)
-  )
-
-
-# ggplot(scored_words,aes(naive_score,bigram_score)) + geom_point()
-# ggplot(scored_words,aes(simmering_score,simmering_wgt_score)) + geom_point()
-# ggplot(scored_words,aes(simmering_score,naive_score)) + geom_point()
-# ggplot(scored_words,aes(simmering_score,bigram_score)) + geom_point()
